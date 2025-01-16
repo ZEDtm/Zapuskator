@@ -1,0 +1,208 @@
+.App {
+  width: 100vw;
+  height: 100vh;
+  text-align: center;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+}
+
+.word{
+  color: #535bf2;
+}
+
+.version{
+  color: #535bf2;
+}
+
+.split {
+  width: 100vw;
+  display: flex;
+
+  justify-content: space-around;
+  align-items: flex-start;
+}
+
+.servers-list{
+  width: calc(100vw/3);
+}
+
+.server-panel{
+  width: calc(100vw/3);
+}
+
+.server-info {
+  margin-bottom: 20px;
+}
+
+.server-info label {
+  display: flex;
+  margin: 10px 0;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.server-info input {
+  padding: 0.6em 1.2em;
+  width: 60%;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  border-radius: 8px;
+  background-color: var(--inpurt-color);
+  border: 1px solid var(--inpurt-color);
+}
+
+.server-info input:hover{
+  border-color: #646cff;
+}
+
+.server-info button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.server-info .http-s-btn,
+.server-info .port-btn{
+  padding: 0.6em 1.2em;
+  height: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  background-color: var(--inpurt-color);
+}
+
+.server-info .http-s-btn{
+  animation: ease-in-out colorBlink infinite;
+}
+
+@keyframes colorBlink {
+  0% {
+    border-color: var(--inpurt-color);
+  }
+  50% {
+    border-color: #ff4d4d;
+  }
+  100%{
+    border-color: var(--inpurt-color);
+  }
+}
+
+.server-item{
+  margin-bottom: 10px;
+}
+
+
+.process-list{
+  width: calc(100vw/3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.process-list table {
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.process-list th, .process-list td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.process-info {
+  width: calc(33vw/2);
+  gap: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.process-item {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.process-url-param{
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+
+.delete-button {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background: #ff1a1a;
+}
+
+.process-status-running{
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  margin-right: 10px;
+  color: forestgreen;
+}
+
+.process-status-stopped{
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  margin-right: 10px;
+  color: #ff1a1a;
+}
+
+.loader{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.terminal-loader{
+  padding: 0.6em 1.2em;
+  font-size: 2em;
+  font-weight: 500;
+  width: 10px;
+}
+
+.terminal-loader::before {
+  content: "/";
+  animation: changeSymbol 0.5s steps(4) infinite;
+}
+
+@keyframes changeSymbol {
+  0% {
+    content: "/";
+  }
+  25% {
+    content: "-";
+  }
+  50% {
+    content: "\\";
+  }
+  75% {
+    content: "|";
+  }
+  100% {
+    content: "/";
+  }
+}
