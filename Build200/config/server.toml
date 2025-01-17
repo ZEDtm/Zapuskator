@@ -1,4 +1,0 @@
-port = ":4044"
-open_browser = true
-updates = false
-updates_url = ""
