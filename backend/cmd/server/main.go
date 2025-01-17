@@ -9,6 +9,7 @@ import (
 	"os"
 	"project/backend/config"
 	"project/backend/core"
+	"project/backend/lifecycle"
 	"project/backend/server"
 	"project/backend/utils"
 )
@@ -57,10 +58,9 @@ func main() {
 
 	go sServer.Start(newConfig)
 
-	done := make(chan struct{})
-
 	utils.OpenBrowser(logger, newConfig)
-	utils.StopCmd(logger, processManager, done)
+
+	done := lifecycle.OnShutdown(logger, processManager)
 
 	<-done
 	logger.Printf("Завершено")

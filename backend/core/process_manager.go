@@ -1,8 +1,10 @@
 package core
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/url"
 	"os"
@@ -288,6 +290,31 @@ func (pm *ProcessManager) CleanCash(edition, additionalFolder string) error {
 
 	if err := os.RemoveAll(cashPath); err != nil {
 		return fmt.Errorf("error deleting %s: %v", cashPath, err)
+	}
+
+	return nil
+}
+
+func (pm *ProcessManager) Shutdown(logger *log.Logger, ctx context.Context) error {
+	processes := pm.GetAllProcesses()
+	logger.Printf("Найдено процессов для остановки: %d", len(processes))
+
+	for _, process := range processes {
+		logger.Printf("Остановка процесса %d...", process.PID)
+		err := pm.StopApp(process.PID)
+		if err != nil {
+			logger.Printf("Ошибка при завершении процесса %d: %v", process.PID, err)
+		} else {
+			logger.Printf("Процесс %d успешно остановлен", process.PID)
+		}
+
+		select {
+		case <-ctx.Done():
+			logger.Printf("Таймаут при остановке процессов")
+			return ctx.Err()
+		default:
+			continue
+		}
 	}
 
 	return nil
