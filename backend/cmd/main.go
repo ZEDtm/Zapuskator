@@ -3,19 +3,17 @@ package main
 import (
 	"flag"
 	"github.com/BurntSushi/toml"
-	"github.com/gorilla/websocket"
 	"log"
-	"net/http"
 	"os"
 	"project/backend/config"
 	"project/backend/core"
-	"project/backend/lifecycle"
-	"project/backend/server"
-	"project/backend/utils"
+	"project/backend/internal/lifecycle"
+	"project/backend/internal/server"
+	"project/backend/internal/utils"
 )
 
 var (
-	version    string = "2.0.0"
+	version    = "2.0.0"
 	configPath string
 )
 
@@ -44,24 +42,13 @@ func main() {
 
 	processManager := core.NewProcessManager()
 
-	var (
-		upgrader = &websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool {
-				return true
-			},
-		}
-	)
-
-	sServer := server.NewServer(upgrader, processManager, logger)
+	sServer := server.NewServer(logger, processManager)
 
 	go sServer.Start(newConfig)
 
 	utils.OpenBrowser(logger, newConfig)
 
 	done := lifecycle.OnShutdown(logger, processManager)
-
 	<-done
 	logger.Printf("Завершено")
 	os.Exit(0)

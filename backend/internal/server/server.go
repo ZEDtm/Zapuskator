@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"io/ioutil"
@@ -10,80 +11,65 @@ import (
 	"path/filepath"
 	"project/backend/config"
 	"project/backend/core"
+	"project/backend/internal/handler"
 	"strconv"
 	"time"
 )
-
-type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan []byte
-	register   chan *Client
-	unregister chan *Client
-}
 
 type Server struct {
 	hub            *Hub
 	upgrader       *websocket.Upgrader
 	processManager *core.ProcessManager
 	logger         *log.Logger
+	handlers       *handler.MessageHandler
 }
 
-func NewHub() *Hub {
-	return &Hub{
-		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		clients:    make(map[*Client]bool),
+func NewServer(logger *log.Logger, processManager *core.ProcessManager) *Server {
+	upgrader := &websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
 	}
-}
-
-func (h *Hub) Run() {
-	for {
-		select {
-		case client := <-h.register:
-			h.clients[client] = true
-		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
-				close(client.send)
-			}
-		case message := <-h.broadcast:
-			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(h.clients, client)
-				}
-			}
-		}
-	}
-}
-
-func NewServer(upgrader *websocket.Upgrader, processManager *core.ProcessManager, logger *log.Logger) *Server {
-	s := &Server{
+	return &Server{
 		hub:            NewHub(),
 		upgrader:       upgrader,
 		processManager: processManager,
 		logger:         logger,
+		handlers:       CreateHandlers(),
 	}
-	go s.hub.Run()
-	go s.StartProcessChecker()
-	return s
 }
 
 func (s *Server) Start(config *config.Config) {
-	static := http.FileServer(http.Dir(filepath.Join(config.Path, "static")))
-	idx := http.FileServer(http.Dir(config.Path))
+	mux := http.NewServeMux()
 
-	http.Handle("/assets/", http.StripPrefix("/assets/", static))
-	http.Handle("/", idx)
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	static := http.FileServer(http.Dir(filepath.Join(config.Path, "static")))
+	mux.Handle("/assets/", http.StripPrefix("/assets/", static))
+
+	public := http.FileServer(http.Dir(filepath.Join(config.Path, "public")))
+	mux.Handle("/", public)
+
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		s.ServeWs(w, r)
 	})
 
+	go s.hub.Run()
+	go s.StartProcessChecker()
+
+	server := &http.Server{
+		Addr:         config.Port,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
 	s.logger.Printf("Сервер запущен на порту %s", config.Port)
-	s.logger.Fatal(http.ListenAndServe(config.Port, nil))
+
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		s.logger.Printf("Ошибка при запуске сервера: %v", err)
+	}
 }
 
 func (s *Server) ServeWs(w http.ResponseWriter, r *http.Request) {
@@ -92,8 +78,15 @@ func (s *Server) ServeWs(w http.ResponseWriter, r *http.Request) {
 		s.logger.Println(err)
 		return
 	}
-	client := &Client{hub: s.hub, conn: conn, send: make(chan []byte, 256), logger: s.logger, processManager: s.processManager}
-	client.hub.register <- client
+	client := &Client{
+		logger:         s.logger,
+		hub:            s.hub,
+		conn:           conn,
+		send:           make(chan []byte, 256),
+		processManager: s.processManager,
+		handlers:       s.handlers,
+	}
+	s.hub.register <- client
 	go client.writePump()
 	go client.readPump()
 }
